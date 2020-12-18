@@ -7,6 +7,12 @@ if exists('b:current_syntax')
   finish
 endif
 
+syn match tomlNoise /,/ display nextgroup=tomlInlineKey,@tomlValue skipempty skipwhite
+hi def link tomlNoise Delimiter
+
+syn match tomlOperator "=" display nextgroup=@tomlValue skipempty skipwhite
+hi def link tomlOperator Operator
+
 syn match tomlEscape /\\[btnfr"/\\]/ display contained
 syn match tomlEscape /\\u\x\{4}/ contained
 syn match tomlEscape /\\U\x\{8}/ contained
@@ -46,24 +52,26 @@ syn match tomlDate /\d\{2\}:\d\{2\}:\d\{2\}\%(\.\d\+\)\?/ display
 syn match tomlDate /\d\{4\}-\d\{2\}-\d\{2\}[T ]\d\{2\}:\d\{2\}:\d\{2\}\%(\.\d\+\)\?\%(Z\|[+-]\d\{2\}:\d\{2\}\)\?/ display
 hi def link tomlDate Constant
 
-syn match tomlKey /\v(^|[{,])\s*\zs[[:alnum:]._-]+\ze\s*\=/ display
+syn match tomlKey /\v[a-z_\-]+(\.[a-z_\-]+)*(\s*\=)@=/ display
 hi def link tomlKey Identifier
 
 syn region tomlKeyDq oneline start=/\v(^|[{,])\s*\zs"/ end=/"\ze\s*=/ contains=tomlEscape
-hi def link tomlKeyDq Identifier
+hi def link tomlKeyDq tomlKey
 
 syn region tomlKeySq oneline start=/\v(^|[{,])\s*\zs'/ end=/'\ze\s*=/
-hi def link tomlKeySq Identifier
+hi def link tomlKeySq tomlKey
 
-syn region tomlTable oneline start=/^\s*\[[^\[]/ end=/\]/ contains=tomlKey,tomlKeyDq,tomlKeySq
+syn cluster tomlTableKeys contains=tomlKey,tomlKeyDq,tomlKeySq
+
+syn match tomlTable /\v(^\s*\[?\s*)@<=\[[a-z_\-]+(\.[a-z_\-]+)*\](\s*\]?\s*$)@=/ contains=@tomlKeys display
 hi def link tomlTable Title
 
-syn region tomlTableArray oneline start=/^\s*\[\[/ end=/\]\]/ contains=tomlKey,tomlKeyDq,tomlKeySq
-hi def link tomlTableArray Title
+syn region tomlTableInline matchgroup=tomlTable start="\V{" end="\V}" contains=ALLBUT,tomlTable transparent
 
-syn cluster tomlValue contains=tomlArray,tomlString,tomlInteger,tomlFloat,tomlBoolean,tomlDate,tomlComment
-syn region tomlKeyValueArray start=/=\s*\[\zs/ end=/\]/ contains=@tomlValue
-syn region tomlArray start=/\[/ end=/\]/ contains=@tomlValue contained
+syn cluster tomlValue contains=tomlArray,tomlTableInline,tomlString,tomlInteger,tomlFloat,tomlBoolean,tomlDate,tomlComment
+
+syn match tomlArray /\v[\[\]]/ contains=tomlTable display
+hi def link tomlArray tomlNoise
 
 syn keyword tomlTodo TODO FIXME XXX BUG contained
 hi def link tomlTodo Todo
